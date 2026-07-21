@@ -1,15 +1,16 @@
 from fastapi import APIRouter, HTTPException
 from app.schemas import AddCadastralNumber
 from app.init_db import connect_db
-from fastapi.testclient import TestClient
 from dotenv import load_dotenv
 import httpx
 import asyncpg
+import os
+
 
 load_dotenv()
 
-from fake_servis import fake_servis
-client = TestClient(fake_servis)
+FAKE_SERVICE_BASE_URL = os.getenv('FAKE_SERVICE_URL', 'http://127.0.0.1:8001')
+
 
 router = APIRouter()
 
@@ -19,10 +20,11 @@ async def query(cadastr_number: AddCadastralNumber):
     cursor = None
     try:
         cursor = await connect_db()
-        servis_resp = client.get('/result')
-        if servis_resp.status_code != 200:
-            raise HTTPException(status_code=502, detail='Fake service error')
-        servis_result = servis_resp.json().get('result')
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.get(f"{FAKE_SERVICE_BASE_URL}/result")
+            resp.raise_for_status()
+            servis_result = resp.json().get('result')
+
         if servis_result is None:
             raise HTTPException(status_code=502, detail='Invalid fake service response')
 
@@ -39,12 +41,19 @@ async def query(cadastr_number: AddCadastralNumber):
         return {'status': 'success', 'result': servis_result}
     except httpx.ReadTimeout:
         raise HTTPException(status_code=504, detail='Fake service timeout')
-    except httpx.HTTPError as exc:
+    
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=502, detail=f'Fake service error: {exc.response.status_code}')
+    
+    except httpx.RequestError as exc:
         raise HTTPException(status_code=502, detail=f'Fake service error: {exc}')
+    
     except asyncpg.PostgresError as exc:
         raise HTTPException(status_code=500, detail=f'Database error: {exc}')
+    
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f'Unknown server error: {exc}')
+    
     finally:
         if cursor is not None:
             await cursor.close()
@@ -52,13 +61,22 @@ async def query(cadastr_number: AddCadastralNumber):
 
 @router.get('/ping')
 async def ping():
-    resp = client.get('/result')
-    if resp.status_code != 200:
-        raise HTTPException(status_code=502, detail='Fake service error')
-    result = resp.json().get('result')
-    if result is None:
-        raise HTTPException(status_code=502, detail='Invalid fake service response')
-    return {'status': 'success', 'result': result}
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            resp = await client.get(f"{FAKE_SERVICE_BASE_URL}/result")
+            resp.raise_for_status()
+            result = resp.json().get('result')
+
+        if result is None:
+            raise HTTPException(status_code=502, detail='Invalid fake service response')
+        return {'status': 'success', 'result': result}
+    except httpx.ReadTimeout:
+        raise HTTPException(status_code=504, detail='Fake service timeout')
+    except httpx.HTTPStatusError as exc:
+        raise HTTPException(status_code=502, detail=f'Fake service error: {exc.response.status_code}')
+    except httpx.RequestError as exc:
+        raise HTTPException(status_code=502, detail=f'Fake service error: {exc}')
+
 
 
 @router.get('/history')
@@ -77,5 +95,6 @@ async def history():
     
 
     
+
 
 
