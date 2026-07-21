@@ -1,24 +1,30 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from app.schemas import AddCadastralNumber
 from app.init_db import connect_db
+from fastapi.testclient import TestClient
 from dotenv import load_dotenv
-import os
 import httpx
+import asyncpg
 
 load_dotenv()
 
-FAKE_SERVIS_URL = os.getenv('FAKE_SERVIS_URL', 'http://localhost:8001')
+from fake_servis import fake_servis
+client = TestClient(fake_servis)
 
 router = APIRouter()
 
 
 @router.post('/query')
 async def query(cadastr_number: AddCadastralNumber):
-    cursor = await connect_db()
+    cursor = None
     try:
-        async with httpx.AsyncClient() as client:
-            servis_resp = await client.get(url=f"{FAKE_SERVIS_URL}/result")
-            servis_result = servis_resp.json().get('result')
+        cursor = await connect_db()
+        servis_resp = client.get('/result')
+        if servis_resp.status_code != 200:
+            raise HTTPException(status_code=502, detail='Fake service error')
+        servis_result = servis_resp.json().get('result')
+        if servis_result is None:
+            raise HTTPException(status_code=502, detail='Invalid fake service response')
 
         await cursor.execute(
             """
@@ -31,16 +37,28 @@ async def query(cadastr_number: AddCadastralNumber):
             servis_result,
         )
         return {'status': 'success', 'result': servis_result}
+    except httpx.ReadTimeout:
+        raise HTTPException(status_code=504, detail='Fake service timeout')
+    except httpx.HTTPError as exc:
+        raise HTTPException(status_code=502, detail=f'Fake service error: {exc}')
+    except asyncpg.PostgresError as exc:
+        raise HTTPException(status_code=500, detail=f'Database error: {exc}')
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f'Unknown server error: {exc}')
     finally:
-        await cursor.close()
+        if cursor is not None:
+            await cursor.close()
 
 
 @router.get('/ping')
 async def ping():
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url=f"{FAKE_SERVIS_URL}/result")
-        result = resp.json().get('result')
-        return {'status': 'success', 'result': result}
+    resp = client.get('/result')
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail='Fake service error')
+    result = resp.json().get('result')
+    if result is None:
+        raise HTTPException(status_code=502, detail='Invalid fake service response')
+    return {'status': 'success', 'result': result}
 
 
 @router.get('/history')
