@@ -9,7 +9,6 @@ class AddCadastralNumber(Base):
     cadastral_number: str = Field(max_length=20)
     latitude: float 
     longitude: float 
-    server_response: bool
 
     model_config = ConfigDict(extra='forbid')
 

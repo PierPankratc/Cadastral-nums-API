@@ -1,13 +1,17 @@
-# from app.routers import ...
 from fastapi import FastAPI
-from app.init_db import connect_db, init_db
+import uvicorn
+import asyncio
+from app.routers import router
+from app.init_db import init_db
 
 app = FastAPI()
+app.include_router(router)
 
-def main():
-    init_db()
-  
+async def init_app():
+    await init_db()
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(init_app())
+    uvicorn.run(app, port=8000)
+    
