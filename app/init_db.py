@@ -21,7 +21,7 @@ async def init_db():
             """
             CREATE TABLE IF NOT EXISTS cadastral_info(
                 id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-                cadastral_number VARCHAR(20) NOT NULL UNIQUE,
+                cadastral_number VARCHAR NOT NULL UNIQUE,
                 latitude VARCHAR(30) NOT NULL,
                 longitude VARCHAR(30) NOT NULL,
                 created_at TIMESTAMP DEFAULT current_timestamp NOT NULL,

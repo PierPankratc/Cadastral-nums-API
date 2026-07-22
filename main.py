@@ -8,12 +8,5 @@ from app.init_db import init_db
 app = FastAPI()
 app.include_router(router)
 
-
 async def init_app():
     await init_db()
-
-
-if __name__ == "__main__":
-    asyncio.run(init_app())
-
-    
