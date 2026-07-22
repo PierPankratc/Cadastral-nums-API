@@ -111,3 +111,6 @@ curl -X POST http://localhost:8000/query \
 ```bash
 curl http://localhost:8000/history
 ```
+## 🧪 Контакты для связи:
+[Telegram] (https://t.me/@PierPankratc)
+[Email] (mailto:peterpankratc@gmail.com)
