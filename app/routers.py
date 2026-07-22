@@ -3,7 +3,6 @@ from app.schemas import AddCadastralNumber
 from app.init_db import connect_db
 from dotenv import load_dotenv
 import httpx
-import asyncpg
 import os
 
 
@@ -39,20 +38,9 @@ async def query(cadastr_number: AddCadastralNumber):
             servis_result,
         )
         return {'status': 'success', 'result': servis_result}
-    except httpx.ReadTimeout:
-        raise HTTPException(status_code=504, detail='Fake service timeout')
-    
-    except httpx.HTTPStatusError as exc:
-        raise HTTPException(status_code=502, detail=f'Fake service error: {exc.response.status_code}')
-    
-    except httpx.RequestError as exc:
-        raise HTTPException(status_code=502, detail=f'Fake service error: {exc}')
-    
-    except asyncpg.PostgresError as exc:
-        raise HTTPException(status_code=500, detail=f'Database error: {exc}')
-    
+
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f'Unknown server error: {exc}')
+        raise HTTPException(status_code=500, detail=f'Fake service error: {exc.response.status_code}')
     
     finally:
         if cursor is not None:
@@ -70,13 +58,9 @@ async def ping():
         if result is None:
             raise HTTPException(status_code=502, detail='Invalid fake service response')
         return {'status': 'success', 'result': result}
-    except httpx.ReadTimeout:
-        raise HTTPException(status_code=504, detail='Fake service timeout')
-    except httpx.HTTPStatusError as exc:
-        raise HTTPException(status_code=502, detail=f'Fake service error: {exc.response.status_code}')
-    except httpx.RequestError as exc:
-        raise HTTPException(status_code=502, detail=f'Fake service error: {exc}')
 
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f'Fake service error: {exc.response.status_code}')
 
 
 @router.get('/history')
