@@ -8,6 +8,7 @@ DSN = os.getenv('DSN', 'postgres://user:pass@localhost:5432/test_case')
 async def connect_db():
     return await asyncpg.connect(DSN)
 
+
 async def init_db():
     connection = None
     try:

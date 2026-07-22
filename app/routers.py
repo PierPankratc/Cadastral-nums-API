@@ -3,18 +3,19 @@ from app.schemas import AddCadastralNumber
 from app.init_db import connect_db
 from dotenv import load_dotenv
 import httpx
+import asyncpg
 import os
 
 
 load_dotenv()
 
-FAKE_SERVICE_BASE_URL = os.getenv('FAKE_SERVICE_URL', 'http://127.0.0.1:8001')
+FAKE_SERVICE_BASE_URL = os.getenv("FAKE_SERVICE_URL", "http://127.0.0.1:8001")
 
 
 router = APIRouter()
 
 
-@router.post('/query')
+@router.post("/query")
 async def query(cadastr_number: AddCadastralNumber):
     cursor = None
     try:
@@ -22,10 +23,10 @@ async def query(cadastr_number: AddCadastralNumber):
         async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.get(f"{FAKE_SERVICE_BASE_URL}/result")
             resp.raise_for_status()
-            servis_result = resp.json().get('result')
+            service_result = resp.json().get("result")
 
-        if servis_result is None:
-            raise HTTPException(status_code=502, detail='Invalid fake service response')
+        if service_result is None:
+            raise HTTPException(status_code=502, detail="Invalid fake service response")
 
         await cursor.execute(
             """
@@ -35,25 +36,24 @@ async def query(cadastr_number: AddCadastralNumber):
             str(cadastr_number.cadastral_number),
             str(cadastr_number.latitude),
             str(cadastr_number.longitude),
-            servis_result,
+            service_result,
         )
         return {'status': 'success', 'result': servis_result}
 
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=f'Fake service error: {exc.response.status_code}')
-    
+        raise HTTPException(status_code=500, detail=f"Unknown server error: {exc}")
     finally:
         if cursor is not None:
             await cursor.close()
 
 
-@router.get('/ping')
+@router.get("/ping")
 async def ping():
     try:
         async with httpx.AsyncClient(timeout=60) as client:
             resp = await client.get(f"{FAKE_SERVICE_BASE_URL}/result")
             resp.raise_for_status()
-            result = resp.json().get('result')
+            result = resp.json().get("result")
 
         if result is None:
             raise HTTPException(status_code=502, detail='Invalid fake service response')
@@ -63,10 +63,11 @@ async def ping():
         raise HTTPException(status_code=500, detail=f'Fake service error: {exc.response.status_code}')
 
 
-@router.get('/history')
+@router.get("/history")
 async def history():
-    cursor = await connect_db()
+    cursor = None
     try:
+        cursor = await connect_db()
         rows = await cursor.fetch(
             """
             SELECT * FROM cadastral_info
@@ -75,10 +76,7 @@ async def history():
         result = [dict(row) for row in rows]
         return {'status': 'success', 'cadastr_list': result}
     finally:
-        await cursor.close()
-    
-
-    
-
+        if cursor is not None:
+            await cursor.close()
 
 
