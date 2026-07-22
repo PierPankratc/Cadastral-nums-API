@@ -38,7 +38,7 @@ async def query(cadastr_number: AddCadastralNumber):
             str(cadastr_number.longitude),
             service_result,
         )
-        return {'status': 'success', 'result': servis_result}
+        return {'status': 'success', 'result': service_result}
 
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Unknown server error: {exc}")
