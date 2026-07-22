@@ -17,7 +17,7 @@ router = APIRouter()
 
 @router.post('/query')
 async def query(cadastr_number: AddCadastralNumber):
-    cursor = None
+
     try:
         cursor = await connect_db()
         async with httpx.AsyncClient(timeout=60) as client:
@@ -33,12 +33,13 @@ async def query(cadastr_number: AddCadastralNumber):
             INSERT INTO cadastral_info(cadastral_number, latitude, longitude, server_response)
             VALUES($1, $2, $3, $4);
             """,
-            cadastr_number.cadastral_number,
+            str(cadastr_number.cadastral_number),
             str(cadastr_number.latitude),
             str(cadastr_number.longitude),
             servis_result,
         )
-        return {'status': 'success', 'result': servis_result}
+        return {'status': 'success', 
+                'result': servis_result}
     except httpx.ReadTimeout:
         raise HTTPException(status_code=504, detail='Fake service timeout')
     

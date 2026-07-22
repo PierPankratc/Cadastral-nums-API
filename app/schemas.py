@@ -6,7 +6,7 @@ class Base(BaseModel):
     pass
 
 class AddCadastralNumber(Base):
-    cadastral_number: str = Field(max_length=20)
+    cadastral_number: int = Field(max_digits=20)
     latitude: float 
     longitude: float 
 
