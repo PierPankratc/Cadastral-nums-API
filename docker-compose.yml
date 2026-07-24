@@ -20,7 +20,7 @@ services:
   fake-service:
     build: .
     command: >
-      sh -c "uvicorn fake_servis:fake_servis --host 0.0.0.0 --port 8001"
+      sh -c "uvicorn fake_service:fake_service --host 0.0.0.0 --port 8001"
     environment:
       FAKE_SERVICE_URL: http://fake-service:8001
     ports:
