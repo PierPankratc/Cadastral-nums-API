@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+import json
+
+from fastapi import APIRouter, HTTPException, Response
 from app.schemas import AddCadastralNumber
 from app.init_db import connect_db
 from dotenv import load_dotenv
@@ -14,6 +16,9 @@ FAKE_SERVICE_BASE_URL = os.getenv("FAKE_SERVICE_URL", "http://127.0.0.1:8001")
 
 router = APIRouter()
 
+router.get('/')
+async def start():
+    return Response(status_code=200, content=json.dumbs({'status': 'success'}), media_type='application/json')
 
 @router.post("/query")
 async def query(cadastr_number: AddCadastralNumber):
@@ -50,17 +55,13 @@ async def query(cadastr_number: AddCadastralNumber):
 @router.get("/ping")
 async def ping():
     try:
-        async with httpx.AsyncClient(timeout=60) as client:
-            resp = await client.get(f"{FAKE_SERVICE_BASE_URL}/result")
-            resp.raise_for_status()
-            result = resp.json().get("result")
-
-        if result is None:
-            raise HTTPException(status_code=502, detail='Invalid fake service response')
-        return {'status': 'success', 'result': result}
-
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get("http://127.0.0.1:8000")
+            return resp.status_code==200
+   
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f'Fake service error: {exc.response.status_code}')
+
 
 
 @router.get("/history")
